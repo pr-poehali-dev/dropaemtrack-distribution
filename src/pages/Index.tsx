@@ -12,10 +12,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import TrackUploadModal from '@/components/TrackUploadModal';
+import NotificationCenter from '@/components/NotificationCenter';
+import TrackDetailModal from '@/components/TrackDetailModal';
+import SearchAndFilters from '@/components/SearchAndFilters';
+import FinancialTab from '@/components/FinancialTab';
+import ProfileSettings from '@/components/ProfileSettings';
+import { exportTrackData } from '@/utils/exportHelpers';
 
 type UserRole = 'artist' | 'moderator' | 'manager' | 'admin';
 
-const mockTracks = [
+interface Track {
+  id: number;
+  title: string;
+  artist: string;
+  status: string;
+  streams: number;
+  uploadDate: string;
+  genre: string;
+}
+
+const mockTracks: Track[] = [
   {
     id: 1,
     title: 'Summer Vibes',
@@ -56,6 +73,10 @@ const mockTracks = [
 
 const Index = () => {
   const [currentRole, setCurrentRole] = useState<UserRole>('artist');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [filteredTracks, setFilteredTracks] = useState<Track[]>(mockTracks);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,20 +108,58 @@ const Index = () => {
     }
   };
 
+  const handleTrackClick = (track: Track) => {
+    setSelectedTrack(track);
+    setDetailModalOpen(true);
+  };
+
+  const handleSearch = (query: string) => {
+    const filtered = mockTracks.filter(
+      (track) =>
+        track.title.toLowerCase().includes(query.toLowerCase()) ||
+        track.artist.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredTracks(filtered);
+  };
+
+  const handleFilterChange = (filters: any) => {
+    let filtered = [...mockTracks];
+
+    if (filters.status.length > 0) {
+      filtered = filtered.filter((track) => filters.status.includes(track.status));
+    }
+
+    if (filters.genre.length > 0) {
+      filtered = filtered.filter((track) => filters.genre.includes(track.genre));
+    }
+
+    if (filters.sortBy === 'date-desc') {
+      filtered.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+    } else if (filters.sortBy === 'date-asc') {
+      filtered.sort((a, b) => new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime());
+    } else if (filters.sortBy === 'streams-desc') {
+      filtered.sort((a, b) => b.streams - a.streams);
+    } else if (filters.sortBy === 'title-asc') {
+      filtered.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    setFilteredTracks(filtered);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                 <Icon name="Music" size={24} className="text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold">dropaemtrack</h1>
+              <h1 className="text-xl md:text-2xl font-bold">dropaemtrack</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <Select value={currentRole} onValueChange={(value) => setCurrentRole(value as UserRole)}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[160px] md:w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -110,9 +169,7 @@ const Index = () => {
                   <SelectItem value="admin">⚙️ Администратор</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="icon">
-                <Icon name="Bell" size={20} />
-              </Button>
+              <NotificationCenter />
               <Button variant="ghost" size="icon">
                 <Icon name="User" size={20} />
               </Button>
@@ -121,15 +178,15 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">
+      <main className="container mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">
             {currentRole === 'artist' && 'Панель артиста'}
             {currentRole === 'moderator' && 'Панель модератора'}
             {currentRole === 'manager' && 'Панель руководителя'}
             {currentRole === 'admin' && 'Админ-панель'}
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm md:text-base">
             {currentRole === 'artist' && 'Управляйте своими треками и отслеживайте аналитику'}
             {currentRole === 'moderator' && 'Проверяйте и модерируйте загруженные треки'}
             {currentRole === 'manager' && 'Контролируйте процесс дистрибуции и аналитику'}
@@ -137,104 +194,129 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6 bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+          <Card className="p-4 md:p-6 bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30">
             <div className="flex items-center justify-between mb-2">
-              <Icon name="Music" size={24} className="text-primary" />
-              <Icon name="TrendingUp" size={20} className="text-primary" />
+              <Icon name="Music" size={20} className="text-primary md:w-6 md:h-6" />
+              <Icon name="TrendingUp" size={16} className="text-primary md:w-5 md:h-5" />
             </div>
-            <p className="text-3xl font-bold mb-1">
+            <p className="text-2xl md:text-3xl font-bold mb-1">
               {currentRole === 'artist' ? '12' : '1,247'}
             </p>
-            <p className="text-sm text-muted-foreground">Всего треков</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Всего треков</p>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-blue-500/20 to-blue-500/5 border-blue-500/30">
+          <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-500/20 to-blue-500/5 border-blue-500/30">
             <div className="flex items-center justify-between mb-2">
-              <Icon name="Eye" size={24} className="text-blue-500" />
-              <Icon name="TrendingUp" size={20} className="text-blue-500" />
+              <Icon name="Eye" size={20} className="text-blue-500 md:w-6 md:h-6" />
+              <Icon name="TrendingUp" size={16} className="text-blue-500 md:w-5 md:h-5" />
             </div>
-            <p className="text-3xl font-bold mb-1">
+            <p className="text-2xl md:text-3xl font-bold mb-1">
               {currentRole === 'artist' ? '1.2M' : '45.8M'}
             </p>
-            <p className="text-sm text-muted-foreground">Прослушиваний</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Прослушиваний</p>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border-yellow-500/30">
+          <Card className="p-4 md:p-6 bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border-yellow-500/30">
             <div className="flex items-center justify-between mb-2">
-              <Icon name="Clock" size={24} className="text-yellow-500" />
-              <Badge variant="outline" className="text-yellow-500 border-yellow-500/30">
+              <Icon name="Clock" size={20} className="text-yellow-500 md:w-6 md:h-6" />
+              <Badge variant="outline" className="text-yellow-500 border-yellow-500/30 text-xs">
                 Сегодня
               </Badge>
             </div>
-            <p className="text-3xl font-bold mb-1">
+            <p className="text-2xl md:text-3xl font-bold mb-1">
               {currentRole === 'artist' ? '2' : '38'}
             </p>
-            <p className="text-sm text-muted-foreground">На модерации</p>
+            <p className="text-xs md:text-sm text-muted-foreground">На модерации</p>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-accent/20 to-accent/5 border-accent/30">
+          <Card className="p-4 md:p-6 bg-gradient-to-br from-accent/20 to-accent/5 border-accent/30">
             <div className="flex items-center justify-between mb-2">
-              <Icon name="DollarSign" size={24} className="text-accent" />
-              <Icon name="TrendingUp" size={20} className="text-accent" />
+              <Icon name="DollarSign" size={20} className="text-accent md:w-6 md:h-6" />
+              <Icon name="TrendingUp" size={16} className="text-accent md:w-5 md:h-5" />
             </div>
-            <p className="text-3xl font-bold mb-1">
+            <p className="text-2xl md:text-3xl font-bold mb-1">
               {currentRole === 'artist' ? '$3.2K' : '$127K'}
             </p>
-            <p className="text-sm text-muted-foreground">Доход</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Доход</p>
           </Card>
         </div>
 
         <Tabs defaultValue="tracks" className="space-y-6">
-          <TabsList className="bg-card border border-border">
-            <TabsTrigger value="tracks" className="gap-2">
+          <TabsList className="bg-card border border-border w-full overflow-x-auto flex-nowrap justify-start">
+            <TabsTrigger value="tracks" className="gap-2 flex-shrink-0">
               <Icon name="Music" size={16} />
-              Треки
+              <span className="hidden sm:inline">Треки</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
+            <TabsTrigger value="analytics" className="gap-2 flex-shrink-0">
               <Icon name="BarChart3" size={16} />
-              Аналитика
+              <span className="hidden sm:inline">Аналитика</span>
             </TabsTrigger>
             {currentRole !== 'artist' && (
-              <TabsTrigger value="moderation" className="gap-2">
+              <TabsTrigger value="moderation" className="gap-2 flex-shrink-0">
                 <Icon name="CheckSquare" size={16} />
-                Модерация
+                <span className="hidden sm:inline">Модерация</span>
               </TabsTrigger>
             )}
             {(currentRole === 'manager' || currentRole === 'admin') && (
-              <TabsTrigger value="users" className="gap-2">
+              <TabsTrigger value="users" className="gap-2 flex-shrink-0">
                 <Icon name="Users" size={16} />
-                Пользователи
+                <span className="hidden sm:inline">Пользователи</span>
               </TabsTrigger>
             )}
+            <TabsTrigger value="finance" className="gap-2 flex-shrink-0">
+              <Icon name="DollarSign" size={16} />
+              <span className="hidden sm:inline">Финансы</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2 flex-shrink-0">
+              <Icon name="Settings" size={16} />
+              <span className="hidden sm:inline">Настройки</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tracks" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Мои треки</h3>
-              {currentRole === 'artist' && (
-                <Button className="gap-2">
-                  <Icon name="Upload" size={18} />
-                  Загрузить трек
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h3 className="text-lg md:text-xl font-semibold">Мои треки</h3>
+              <div className="flex gap-2 w-full sm:w-auto">
+                {currentRole === 'artist' && (
+                  <Button onClick={() => setUploadModalOpen(true)} className="gap-2 flex-1 sm:flex-initial">
+                    <Icon name="Upload" size={18} />
+                    <span className="hidden sm:inline">Загрузить трек</span>
+                    <span className="sm:hidden">Загрузить</span>
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => exportTrackData(filteredTracks)}
+                  className="gap-2"
+                >
+                  <Icon name="Download" size={18} />
+                  <span className="hidden sm:inline">Экспорт</span>
                 </Button>
-              )}
+              </div>
             </div>
 
+            <SearchAndFilters onSearch={handleSearch} onFilterChange={handleFilterChange} />
+
             <div className="grid gap-4">
-              {mockTracks.map((track) => (
-                <Card key={track.id} className="p-6 hover:bg-card/80 transition-colors">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/40 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon name="Music" size={28} className="text-primary-foreground" />
+              {filteredTracks.map((track) => (
+                <Card
+                  key={track.id}
+                  className="p-4 md:p-6 hover:bg-card/80 transition-colors cursor-pointer"
+                  onClick={() => handleTrackClick(track)}
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-primary to-primary/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Icon name="Music" size={24} className="text-primary-foreground md:w-7 md:h-7" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-lg font-semibold">{track.title}</h4>
-                        <Badge variant="outline" className={getStatusColor(track.status)}>
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                        <h4 className="text-base md:text-lg font-semibold">{track.title}</h4>
+                        <Badge variant="outline" className={`${getStatusColor(track.status)} text-xs`}>
                           {getStatusText(track.status)}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Icon name="User" size={14} />
                           {track.artist}
@@ -249,29 +331,22 @@ const Index = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-bold text-primary">
-                        {track.streams.toLocaleString()}
-                      </p>
-                      <p className="text-sm text-muted-foreground">прослушиваний</p>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xl md:text-2xl font-bold text-primary">
+                          {track.streams.toLocaleString()}
+                        </p>
+                        <p className="text-xs md:text-sm text-muted-foreground">прослушиваний</p>
+                      </div>
                       {currentRole === 'moderator' && track.status === 'pending' && (
-                        <>
+                        <div className="flex gap-2 flex-shrink-0">
                           <Button size="sm" variant="default" className="gap-1">
                             <Icon name="Check" size={16} />
-                            Одобрить
                           </Button>
                           <Button size="sm" variant="destructive" className="gap-1">
                             <Icon name="X" size={16} />
-                            Отклонить
                           </Button>
-                        </>
-                      )}
-                      {currentRole === 'artist' && (
-                        <Button size="sm" variant="outline" className="gap-1">
-                          <Icon name="MoreHorizontal" size={16} />
-                        </Button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -281,18 +356,18 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+              <Card className="p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2">
                   <Icon name="TrendingUp" size={20} className="text-primary" />
                   Прослушивания по дням
                 </h3>
                 <div className="space-y-4">
-                  {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, index) => {
+                  {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => {
                     const value = Math.random() * 100;
                     return (
                       <div key={day} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between text-xs md:text-sm">
                           <span className="text-muted-foreground">{day}</span>
                           <span className="font-semibold">
                             {(value * 1000).toFixed(0)} прослушиваний
@@ -305,8 +380,8 @@ const Index = () => {
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Card className="p-4 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2">
                   <Icon name="Globe" size={20} className="text-blue-500" />
                   География слушателей
                 </h3>
@@ -319,7 +394,7 @@ const Index = () => {
                     { country: 'Другие', value: 5, color: 'bg-muted' },
                   ].map((item) => (
                     <div key={item.country} className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs md:text-sm">
                         <span className="text-muted-foreground">{item.country}</span>
                         <span className="font-semibold">{item.value}%</span>
                       </div>
@@ -333,74 +408,13 @@ const Index = () => {
                   ))}
                 </div>
               </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Icon name="Tag" size={20} className="text-accent" />
-                  Популярные жанры
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    { genre: 'Electronic', tracks: 342, percentage: 35 },
-                    { genre: 'Pop', tracks: 289, percentage: 29 },
-                    { genre: 'Hip-Hop', tracks: 198, percentage: 20 },
-                    { genre: 'Ambient', tracks: 156, percentage: 16 },
-                  ].map((item) => (
-                    <div
-                      key={item.genre}
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-semibold">{item.genre}</p>
-                        <p className="text-sm text-muted-foreground">{item.tracks} треков</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{item.percentage}%</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Icon name="Activity" size={20} className="text-primary" />
-                  Активность платформы
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                        <Icon name="Upload" size={20} className="text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Новые загрузки</p>
-                        <p className="text-sm text-muted-foreground">За последние 24 часа</p>
-                      </div>
-                    </div>
-                    <p className="text-3xl font-bold text-primary">38</p>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                        <Icon name="CheckCircle" size={20} className="text-blue-500" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Одобрено</p>
-                        <p className="text-sm text-muted-foreground">За последние 24 часа</p>
-                      </div>
-                    </div>
-                    <p className="text-3xl font-bold text-blue-500">27</p>
-                  </div>
-                </div>
-              </Card>
             </div>
           </TabsContent>
 
           {currentRole !== 'artist' && (
             <TabsContent value="moderation" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold">Очередь модерации</h3>
+                <h3 className="text-lg md:text-xl font-semibold">Очередь модерации</h3>
                 <Badge variant="outline" className="text-yellow-500 border-yellow-500/30">
                   {mockTracks.filter((t) => t.status === 'pending').length} треков ожидают
                 </Badge>
@@ -409,13 +423,13 @@ const Index = () => {
                 {mockTracks
                   .filter((t) => t.status === 'pending')
                   .map((track) => (
-                    <Card key={track.id} className="p-6">
-                      <div className="flex items-start gap-6">
-                        <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/40 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Icon name="Music" size={32} className="text-primary-foreground" />
+                    <Card key={track.id} className="p-4 md:p-6">
+                      <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-primary to-primary/40 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Icon name="Music" size={28} className="text-primary-foreground md:w-8 md:h-8" />
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-xl font-semibold mb-2">{track.title}</h4>
+                        <div className="flex-1 w-full">
+                          <h4 className="text-lg md:text-xl font-semibold mb-2">{track.title}</h4>
                           <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                             <div>
                               <p className="text-muted-foreground">Артист</p>
@@ -425,29 +439,19 @@ const Index = () => {
                               <p className="text-muted-foreground">Жанр</p>
                               <p className="font-semibold">{track.genre}</p>
                             </div>
-                            <div>
-                              <p className="text-muted-foreground">Дата загрузки</p>
-                              <p className="font-semibold">{track.uploadDate}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Статус</p>
-                              <Badge variant="outline" className={getStatusColor(track.status)}>
-                                {getStatusText(track.status)}
-                              </Badge>
-                            </div>
                           </div>
-                          <div className="flex gap-3">
-                            <Button className="gap-2">
+                          <div className="flex flex-wrap gap-2 md:gap-3">
+                            <Button className="gap-2 flex-1 sm:flex-initial">
                               <Icon name="Check" size={18} />
-                              Одобрить
+                              <span className="hidden sm:inline">Одобрить</span>
                             </Button>
-                            <Button variant="destructive" className="gap-2">
+                            <Button variant="destructive" className="gap-2 flex-1 sm:flex-initial">
                               <Icon name="X" size={18} />
-                              Отклонить
+                              <span className="hidden sm:inline">Отклонить</span>
                             </Button>
-                            <Button variant="outline" className="gap-2">
+                            <Button variant="outline" className="gap-2 w-full sm:w-auto">
                               <Icon name="MessageSquare" size={18} />
-                              Запросить правки
+                              <span className="hidden sm:inline">Запросить правки</span>
                             </Button>
                           </div>
                         </div>
@@ -461,10 +465,10 @@ const Index = () => {
           {(currentRole === 'manager' || currentRole === 'admin') && (
             <TabsContent value="users" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold">Управление пользователями</h3>
+                <h3 className="text-lg md:text-xl font-semibold">Управление пользователями</h3>
                 <Button className="gap-2">
                   <Icon name="UserPlus" size={18} />
-                  Добавить пользователя
+                  <span className="hidden sm:inline">Добавить</span>
                 </Button>
               </div>
               <div className="grid gap-4">
@@ -472,32 +476,28 @@ const Index = () => {
                   { name: 'DJ Alex', role: 'Артист', tracks: 12, status: 'active' },
                   { name: 'Sarah Connor', role: 'Артист', tracks: 8, status: 'active' },
                   { name: 'John Moderator', role: 'Модератор', tracks: 0, status: 'active' },
-                  { name: 'Jane Manager', role: 'Руководитель', tracks: 0, status: 'active' },
                 ].map((user, index) => (
-                  <Card key={index} className="p-6">
-                    <div className="flex items-center justify-between">
+                  <Card key={index} className="p-4 md:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/40 rounded-full flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/40 rounded-full flex items-center justify-center flex-shrink-0">
                           <Icon name="User" size={24} className="text-primary-foreground" />
                         </div>
                         <div>
-                          <p className="font-semibold text-lg">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.role}</p>
+                          <p className="font-semibold text-base md:text-lg">{user.name}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{user.role}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
                         {user.tracks > 0 && (
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">{user.tracks}</p>
-                            <p className="text-sm text-muted-foreground">треков</p>
+                            <p className="text-xl md:text-2xl font-bold text-primary">{user.tracks}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">треков</p>
                           </div>
                         )}
                         <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
-                          {user.status === 'active' ? 'Активен' : 'Неактивен'}
+                          Активен
                         </Badge>
-                        <Button variant="outline" size="sm">
-                          <Icon name="Settings" size={16} />
-                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -505,8 +505,19 @@ const Index = () => {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="finance">
+            <FinancialTab />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <ProfileSettings />
+          </TabsContent>
         </Tabs>
       </main>
+
+      <TrackUploadModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} />
+      <TrackDetailModal open={detailModalOpen} onOpenChange={setDetailModalOpen} track={selectedTrack} />
     </div>
   );
 };
