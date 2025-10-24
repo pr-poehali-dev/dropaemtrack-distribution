@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Get analytics overview",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "totals": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

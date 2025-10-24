@@ -1,0 +1,48 @@
+{
+  "name": "dropaemtrack - Платформа дистрибуции музыки",
+  "short_name": "dropaemtrack",
+  "description": "Загружайте, управляйте и распространяйте свою музыку на всех платформах",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#9b87f5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "entertainment", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Загрузить трек",
+      "short_name": "Загрузить",
+      "description": "Быстрая загрузка нового трека",
+      "url": "/?action=upload",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Аналитика",
+      "short_name": "Аналитика",
+      "description": "Посмотреть статистику",
+      "url": "/?tab=analytics",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

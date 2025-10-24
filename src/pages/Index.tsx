@@ -18,6 +18,13 @@ import TrackDetailModal from '@/components/TrackDetailModal';
 import SearchAndFilters from '@/components/SearchAndFilters';
 import FinancialTab from '@/components/FinancialTab';
 import ProfileSettings from '@/components/ProfileSettings';
+import AdvancedAnalytics from '@/components/AdvancedAnalytics';
+import ChatSystem from '@/components/ChatSystem';
+import PlaylistManager from '@/components/PlaylistManager';
+import ReleaseCalendar from '@/components/ReleaseCalendar';
+import LabelManager from '@/components/LabelManager';
+import KnowledgeBase from '@/components/KnowledgeBase';
+import ThemeToggle from '@/components/ThemeToggle';
 import { exportTrackData } from '@/utils/exportHelpers';
 
 type UserRole = 'artist' | 'moderator' | 'manager' | 'admin';
@@ -170,6 +177,7 @@ const Index = () => {
                 </SelectContent>
               </Select>
               <NotificationCenter />
+              <ThemeToggle />
               <Button variant="ghost" size="icon">
                 <Icon name="User" size={20} />
               </Button>
@@ -272,6 +280,26 @@ const Index = () => {
               <Icon name="Settings" size={16} />
               <span className="hidden sm:inline">Настройки</span>
             </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-2 flex-shrink-0">
+              <Icon name="MessageSquare" size={16} />
+              <span className="hidden sm:inline">Чат</span>
+            </TabsTrigger>
+            <TabsTrigger value="playlists" className="gap-2 flex-shrink-0">
+              <Icon name="ListMusic" size={16} />
+              <span className="hidden sm:inline">Плейлисты</span>
+            </TabsTrigger>
+            <TabsTrigger value="releases" className="gap-2 flex-shrink-0">
+              <Icon name="Calendar" size={16} />
+              <span className="hidden sm:inline">Релизы</span>
+            </TabsTrigger>
+            <TabsTrigger value="labels" className="gap-2 flex-shrink-0">
+              <Icon name="Briefcase" size={16} />
+              <span className="hidden sm:inline">Лейблы</span>
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="gap-2 flex-shrink-0">
+              <Icon name="BookOpen" size={16} />
+              <span className="hidden sm:inline">База знаний</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tracks" className="space-y-4">
@@ -355,7 +383,11 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
+          <TabsContent value="analytics">
+            <AdvancedAnalytics />
+          </TabsContent>
+
+          <TabsContent value="analytics-old" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               <Card className="p-4 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2">
@@ -512,6 +544,26 @@ const Index = () => {
 
           <TabsContent value="settings">
             <ProfileSettings />
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <ChatSystem />
+          </TabsContent>
+
+          <TabsContent value="playlists">
+            <PlaylistManager />
+          </TabsContent>
+
+          <TabsContent value="releases">
+            <ReleaseCalendar />
+          </TabsContent>
+
+          <TabsContent value="labels">
+            <LabelManager />
+          </TabsContent>
+
+          <TabsContent value="knowledge">
+            <KnowledgeBase />
           </TabsContent>
         </Tabs>
       </main>

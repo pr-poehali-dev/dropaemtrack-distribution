@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Get all labels",
+      "method": "GET",
+      "path": "/?resource=labels",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create label",
+      "method": "POST",
+      "path": "/?resource=labels",
+      "body": {
+        "owner_id": 1,
+        "name": "Test Label"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "name": "Test Label"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

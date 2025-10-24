@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "Get comments for track",
+      "method": "GET",
+      "path": "/?resource=comments&track_id=1",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create comment",
+      "method": "POST",
+      "path": "/?resource=comments",
+      "body": {
+        "track_id": 1,
+        "user_id": 1,
+        "content": "Great track!"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "content": "Great track!"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
